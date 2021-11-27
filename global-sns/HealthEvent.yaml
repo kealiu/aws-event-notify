@@ -1,0 +1,70 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  AWS Health Event SNS Notification With Webhook
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Required
+        Parameters:
+          - NamePrefix
+          - WebhookURL
+    ParameterLabels:
+      NamePrefix:
+        default: The Name Prefix for all resources
+      WebhookURL:
+        default: The Webhook URL of your handler
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Description: '[Required] The Name Prefix for all resources'
+    Default: "HealthEvent"
+  WebhookURL:
+    Type: String
+    Description: '[Required] The Webhook URL of your handler'
+    Default: "http://your.domain.com/webhook/sns"
+
+Resources:
+  SNSTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: !Ref NamePrefix
+      TopicName: !Ref NamePrefix
+
+  SNSWebHook:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !Ref SNSTopic
+      Protocol: http
+      Endpoint: !Ref WebhookURL
+    DependsOn:
+      - SNSTopic
+
+  HealthEventRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: The Event Rule for matching health event
+      Name: !Ref NamePrefix
+      EventPattern:
+        source:
+          - aws.health
+      State: ENABLED
+      Targets:
+        - Arn: !Ref SNSTopic
+          Id: !Ref NamePrefix
+    DependsOn:
+      - SNSTopic
+
+Outputs:
+  HealthEventRule:
+    Value:
+      Fn::GetAtt: 
+        - "HealthEventRule"
+        - "Arn"
+  SNSWebHook:
+    Value: !Ref SNSWebHook
+  SNSTopic:
+    Value: !Ref SNSTopic
