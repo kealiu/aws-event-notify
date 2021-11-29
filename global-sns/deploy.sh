@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # $1 stackname
 # $2 webhook
