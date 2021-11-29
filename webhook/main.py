@@ -21,18 +21,20 @@ def TranslateToChinese(msg):
     """
     Help function to translate message from english to chinese 
     """
+    print("Tanslate message")
     translate = boto3.client(service_name='translate')
     result = translate.translate_text(Text=msg, SourceLanguageCode="en", TargetLanguageCode="zh")
     return result.get('TranslatedText')
 
-def CalloutAlarm(alarmsg):
+def CalloutAlarm(subject: str, alarmsg: str):
     """
     Help function to callout use connect services,you should setup and config connect firstly
     """
+    print("CalloutAlarm message")
     client = boto3.client('connect')
     resp = client.start_outbound_voice_contact(
                Attributes={
-                   'AlarmMessage': '<speak><break time=\"3s\"/>'+TranslateToChinese(alarmsg)+'</speak>'
+                   'AlarmMessage': '<speak><break time=\"3s\"/>'+TranslateToChinese(subject)+'<break time=\"2s\"/>'+TranslateToChinese(alarmsg)+'</speak>'
                },
                **CALLOUT_CONFIG
            )
@@ -56,8 +58,8 @@ def Notification(req: dict, bgtasks: BackgroundTasks):
     if 'Message' in req and req['Message']:
         try:
             info = json.loads(req['Message'])
-            if 'eventDescription' in info and info['eventDescription']:
-                bgtasks.add_task(CalloutAlarm, info['eventDescription'])
+            if 'detail' in info and 'eventDescription' in info['detail'] and info['detail']['eventDescription']:
+                bgtasks.add_task(CalloutAlarm, req['Subject'], info['detail']['eventDescription'][0]['latestDescription'])
         except ValueError as e:
             print("Message body is not json string") 
     return JSONResponse({"status_code": 200, "message": "Notification Confirmed"}, status_code=200)
