@@ -81,7 +81,7 @@ async def add_process_time_header(request: Request, call_next):
     for hd in SNS_HEADERS:
         if hd not in request.headers:
             invalid = True
-    if  request.headers['user-agent'] != 'Amazon Simple Notification Service Agent':
+    if  (not 'user-agent' in request.headers) or (request.headers['user-agent'] != 'Amazon Simple Notification Service Agent'):
         invalid = True
     if invalid:
         return JSONResponse({"status_code": 403, "message": "You are not allow to access this site"}, status_code=403)
